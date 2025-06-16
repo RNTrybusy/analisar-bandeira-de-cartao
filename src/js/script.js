@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadCardIcons() {
     Object.entries(cardIcons).forEach(([brand, icon]) => {
         const img = document.createElement('img');
-        img.src = `../../src/card_icons/${icon}`;
+        img.src = `./src/card_icons/${icon}`;
         img.alt = brand;
         img.title = brand;
         img.dataset.brand = brand;
@@ -105,7 +105,7 @@ function updateCardPreview() {
 
 // Atualiza a bandeira exibida no cartão
 function updateCardBrand(brand) {
-    const iconPath = cardIcons[brand] ? `../../src/card_icons/${cardIcons[brand]}` : '../../src/card_icons/generic.svg';
+    const iconPath = cardIcons[brand] ? `./src/card_icons/${cardIcons[brand]}` : './src/card_icons/generic.svg';
     cardLogo.src = iconPath;
     cardLogo.alt = brand;
     cardLogo.title = brand;
