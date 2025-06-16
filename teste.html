@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Validador de Cartão</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card-preview {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            background: #f9f9f9;
+        }
+        input {
+            padding: 10px;
+            width: 200px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .valid { border-color: #28a745; }
+        .invalid { border-color: #dc3545; }
+        .valid-message { color: #28a745; }
+        .invalid-message { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>Validador de Cartão de Crédito</h1>
+    <div>
+        <input type="text" id="card-number" placeholder="Número do cartão" maxlength="19">
+        <button id="verify-button">Verificar</button>
+    </div>
+    
+    <div class="card-preview">
+        <div id="card-number-display">•••• •••• •••• ••••</div>
+        <img id="card-logo" src="src/card_icons/generic.svg" alt="Bandeira" style="height: 30px; margin-top: 10px;">
+    </div>
+    
+    <div id="result" class="result" style="display: none;">
+        <h3 id="result-title">Resultado</h3>
+        <p id="result-message"></p>
+    </div>
+
+    <script type="module">
+        // Importa as funções de validação
+        import { validarCartao, identificarBandeira, validarCartaoLuhn } from './src/js/index.js';
+
+        // Elementos da DOM
+        const cardNumberInput = document.getElementById('card-number');
+        const cardNumberDisplay = document.getElementById('card-number-display');
+        const cardLogo = document.getElementById('card-logo');
+        const resultDiv = document.getElementById('result');
+        const resultTitle = document.getElementById('result-title');
+        const resultMessage = document.getElementById('result-message');
+        const verifyButton = document.getElementById('verify-button');
+
+        // Mapeamento de bandeiras para ícones
+        const cardIcons = {
+            'Visa': 'visa.svg',
+            'MasterCard': 'mastercard.svg',
+            'American Express': 'amex.svg',
+            'Diners Club': 'diners.svg',
+            'Discover': 'discover.svg',
+            'Elo': 'elo.svg',
+            'Hipercard': 'hipercard.svg',
+            'JCB': 'jcb.svg',
+            'Aura': 'generic.svg',
+            'enRoute': 'generic.svg',
+            'Voyager': 'generic.svg',
+            'Desconhecida': 'generic.svg'
+        };
+
+        // Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    // Adiciona máscara ao campo de número do cartão
+    cardNumberInput.addEventListener('input', formatCardNumber);
+    
+    // Adiciona validação em tempo real
+    cardNumberInput.addEventListener('input', updateCardPreview);
+    
+    // Adiciona evento de clique ao botão
+    verifyButton.addEventListener('click', handleFormSubmit);
+});
+
+
+// Formata o número do cartão com espaços
+function formatCardNumber(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    let formattedValue = '';
+    
+    for (let i = 0; i < value.length; i++) {
+        if (i > 0 && i % 4 === 0) {
+            formattedValue += ' ';
+        }
+        formattedValue += value[i];
+    }
+    
+    e.target.value = formattedValue.trim();
+}
+
+// Atualiza a visualização do cartão
+function updateCardPreview() {
+    const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+    
+    // Atualiza o display do número do cartão
+    if (cardNumber) {
+        let display = '';
+        for (let i = 0; i < 16; i++) {
+            if (i > 0 && i % 4 === 0) display += ' ';
+            display += i < cardNumber.length ? cardNumber[i] : '•';
+        }
+        cardNumberDisplay.textContent = display;
+    } else {
+        cardNumberDisplay.textContent = '•••• •••• •••• ••••';
+    }
+    
+    // Identifica a bandeira
+    const brand = identificarBandeira(cardNumber);
+    updateCardBrand(brand);
+    
+    // Validação básica em tempo real
+    if (cardNumber.length >= 13) {
+        const isValid = validarCartaoLuhn(cardNumber);
+        cardNumberInput.classList.toggle('valid', isValid);
+        cardNumberInput.classList.toggle('invalid', !isValid && cardNumber.length > 0);
+    } else {
+        cardNumberInput.classList.remove('valid', 'invalid');
+    }
+}
+
+// Atualiza a bandeira exibida no cartão
+function updateCardBrand(brand) {
+    const iconPath = cardIcons[brand] ? `src/card_icons/${cardIcons[brand]}` : 'src/card_icons/generic.svg';
+    cardLogo.src = iconPath;
+    cardLogo.alt = brand;
+    cardLogo.title = brand;
+}
+
+// Manipula o envio do formulário
+function handleFormSubmit() {
+    const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+    
+    // Mostra o estado de carregamento
+    verifyButton.disabled = true;
+    verifyButton.textContent = 'Validando...';
+    
+    // Simula um atraso para melhor experiência do usuário
+    setTimeout(() => {
+        const result = validarCartao(cardNumber);
+        showResult(result);
+        
+        // Remove o estado de carregamento
+        verifyButton.disabled = false;
+        verifyButton.textContent = 'Verificar';
+    }, 800);
+}
+
+// Exibe o resultado da validação
+function showResult(result) {
+    resultDiv.style.display = 'block';
+    
+    if (result.valido) {
+        resultTitle.textContent = `Bandeira: ${result.bandeira}`;
+        resultMessage.textContent = 'Número de cartão válido';
+        resultDiv.className = 'result valid';
+    } else {
+        resultTitle.textContent = 'Cartão inválido';
+        resultMessage.textContent = result.mensagem || 'Verifique o número do cartão e tente novamente.';
+        resultDiv.className = 'result invalid';
+        
+        // Adiciona animação de erro
+        cardNumberInput.classList.add('shake');
+        setTimeout(() => cardNumberInput.classList.remove('shake'), 300);
+    }
+    
+    // Rola até o resultado
+    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+    </script>
+</body>
+</html>
